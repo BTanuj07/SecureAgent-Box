@@ -1,0 +1,104 @@
+# config/config.yaml
+application:
+  name: "SecureAgentbox"
+  host: "127.0.0.1"
+  port: 1337
+  debug: false
+  version: "4.1.0"
+
+utils:
+  allowed_extensions:
+    - exe
+    - dll
+    - bin
+    - docx
+    - xlsx
+    - lnk
+    - sys
+  max_file_size: 104857600  # 100MB in bytes
+  upload_folder: "Uploads"
+  result_folder: "Results"
+  malapi_path: "Utils\\malapi.json"
+
+
+analysis:
+  process:
+    init_wait_time: 5  # Time in seconds to wait for payload initialization
+  
+  doppelganger:
+    db:
+      path: "Utils\\DoppelgangerDB"
+      blender: "Blender"
+      fuzzyhash: "FuzzyHash"
+      fuzzy_extensions: 
+        - exe
+        - dll
+        - bin
+  
+  static:
+    yara:
+      enabled: true
+      tool_path: ".\\Scanners\\Yara\\yara64.exe"
+      command: "{tool_path} -s -m {rules_path} {file_path}"
+      rules_path: ".\\Scanners\\Yara\\LitterBox.yar"
+      timeout: 120
+    
+    checkplz:
+      enabled: true
+      tool_path: ".\\Scanners\\CheckPlz\\CheckPlz.exe"
+      command: "{tool_path} -m -r -f {file_path}"
+      timeout: 120
+
+    stringnalyzer:
+      enabled: true
+      tool_path: ".\\Scanners\\Stringnalyzer\\Stringnalyzer.exe "
+      command: "{tool_path} --wide -f {file_path}"
+      timeout: 120
+
+  dynamic:
+    yara:
+      enabled: true
+      tool_path: ".\\Scanners\\Yara\\yara64.exe"
+      command: "{tool_path} -s -m {rules_path} {pid}"
+      rules_path: ".\\Scanners\\Yara\\LitterBox.yar"
+      timeout: 120
+
+    pe_sieve:
+      enabled: true
+      tool_path: ".\\Scanners\\PE-Sieve\\pe-sieve.exe"
+      command: "{tool_path} /pid {pid} /threads /data 3 /iat 3 /obfusc 3 /shellc 3 /dir .\\Scanners\\PE-Sieve\\analysis "
+      timeout: 120
+
+    hollows_hunter:
+      enabled: true
+      tool_path: ".\\Scanners\\HollowsHunter\\hollows_hunter.exe"
+      command: "{tool_path} /threads /data 3 /iat 3 /obfusc 3 /hooks /shellc 3 /json /jlvl 2 /quiet /ofilter 2" #  removed process dump large disk usage /dir .\\Scanners\\HollowsHunter\\analysis
+      timeout: 600
+
+    moneta:
+      enabled: true
+      tool_path: ".\\Scanners\\Moneta\\Moneta64.exe"
+      command: "{tool_path} -m ioc -p {pid} --option from-base suppress-banner"
+      timeout: 360
+    
+    patriot:
+      enabled: true
+      tool_path: ".\\Scanners\\Patriot\\Patriot.exe"
+      command: "{tool_path} -p {pid}"
+      timeout: 120
+
+    hsb:
+      enabled: true
+      tool_path: ".\\Scanners\\HuntSleepingBeacons\\Hunt-Sleeping-Beacons.exe"
+      command: "{tool_path} -p {pid}"
+      timeout: 360
+
+    rededr:
+      enabled: true
+      etw_wait_time: 15  # Time in seconds to wait for ETW setup
+      tool_path: ".\\Scanners\\RedEdr\\RedEdr.exe"
+      command: "{tool_path} -e --trace {process_name}"
+      timeout: 120
+
+
+

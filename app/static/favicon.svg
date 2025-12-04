@@ -1,0 +1,30 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="32" cy="32" r="30" fill="url(#gradient1)"/>
+  
+  <!-- Shield Shape -->
+  <path d="M32 8L16 16V28C16 38 22 46 32 52C42 46 48 38 48 28V16L32 8Z" fill="url(#gradient2)" stroke="white" stroke-width="2"/>
+  
+  <!-- Lock Icon -->
+  <rect x="28" y="28" width="8" height="10" rx="1" fill="white"/>
+  <path d="M26 28V24C26 20.6863 28.6863 18 32 18C35.3137 18 38 20.6863 38 24V28" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Scan Lines Effect -->
+  <line x1="20" y1="22" x2="44" y2="22" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+  <line x1="20" y1="26" x2="44" y2="26" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+  <line x1="20" y1="34" x2="44" y2="34" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+  <line x1="20" y1="38" x2="44" y2="38" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="gradient1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="gradient2" x1="16" y1="8" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.9)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.6)"/>
+    </linearGradient>
+  </defs>
+</svg>

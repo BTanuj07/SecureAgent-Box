@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block page_title %}Upload & Analyze{% endblock %}
+
+{% block content %}
+<div class="upload-container fade-in">
+    <!-- Progress Steps -->
+    <div class="progress-steps">
+        <div class="step active" id="step1">
+            <div class="step-circle">
+                <span class="step-number">1</span>
+                <svg class="step-check hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div class="step-content">
+                <div class="step-title">Upload File</div>
+                <div class="step-desc">Select your payload</div>
+            </div>
+        </div>
+        
+        <div class="step-line"></div>
+        
+        <div class="step" id="step2">
+            <div class="step-circle">
+                <span class="step-number">2</span>
+                <svg class="step-check hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div class="step-content">
+                <div class="step-title">Choose Analysis</div>
+                <div class="step-desc">Select analysis type</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Area -->
+    <div id="uploadArea" class="upload-section">
+        <div class="card">
+            <div id="dropZone" class="drop-zone">
+                <input type="file" id="fileInput" class="hidden" accept=".exe,.dll,.bin,.docx,.xlsx,.lnk,.sys">
+                <label for="fileInput" class="drop-zone-label">
+                    <div class="drop-zone-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                    </div>
+                    <h3 class="drop-zone-title">Drop your file here or click to browse</h3>
+                    <p class="drop-zone-subtitle">Drag and drop your payload file</p>
+                    
+                    <div class="file-types">
+                        <span class="file-types-label">Supported formats:</span>
+                        {% for ext in config.utils.allowed_extensions %}
+                        <span class="file-type-badge">.{{ ext }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="file-size-info">
+                        Maximum file size: {{ (config.utils.max_file_size / 1024 / 1024) | round(1) }} MB
+                    </div>
+                </label>
+            </div>
+            <div id="uploadStatus" class="hidden"></div>
+        </div>
+    </div>
+
+    <!-- Analysis Selection Area -->
+    <div id="fileAnalysisArea" class="hidden analysis-section">
+        <!-- File Info Card -->
+        <div class="card file-info-card">
+            <div class="file-info-header">
+                <div class="file-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div class="file-details">
+                    <h3 id="fileName" class="file-name"></h3>
+                    <div class="file-meta">
+                        <span id="fileSize"></span>
+                        <span class="separator">•</span>
+                        <span id="fileType"></span>
+                    </div>
+                </div>
+                <button onclick="location.reload()" class="btn btn-secondary btn-sm">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Upload Another
+                </button>
+            </div>
+            
+            <div class="file-hashes">
+                <div class="hash-item">
+                    <div class="hash-label">
+                        <span>MD5</span>
+                        <button onclick="copyHash('md5Hash')" class="copy-btn">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <code id="md5Hash" class="hash-value"></code>
+                </div>
+                <div class="hash-item">
+                    <div class="hash-label">
+                        <span>SHA256</span>
+                        <button onclick="copyHash('sha256Hash')" class="copy-btn">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <code id="sha256Hash" class="hash-value"></code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Options -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Select Analysis Type</h4>
+            </div>
+            <div class="card-body">
+                <div id="regularAnalysisOptions" class="analysis-grid">
+                    <!-- Static Analysis -->
+                    <button onclick="selectAnalysisType('static')" class="analysis-option">
+                        <div class="analysis-icon static-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="analysis-content">
+                            <h5 class="analysis-title">Static Analysis</h5>
+                            <p class="analysis-desc">Analyze without execution</p>
+                            <ul class="analysis-features">
+                                <li>YARA Pattern Matching</li>
+                                <li>PE Structure Analysis</li>
+                                <li>String Extraction</li>
+                                <li>Signature Detection</li>
+                            </ul>
+                        </div>
+                    </button>
+
+                    <!-- Dynamic Analysis -->
+                    <button onclick="selectAnalysisType('dynamic')" class="analysis-option">
+                        <div class="analysis-icon dynamic-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="analysis-content">
+                            <h5 class="analysis-title">Dynamic Analysis</h5>
+                            <p class="analysis-desc">Runtime behavior monitoring</p>
+                            <ul class="analysis-features">
+                                <li>Memory Scanning</li>
+                                <li>Process Injection Detection</li>
+                                <li>Beacon Analysis</li>
+                                <li>ETW Telemetry</li>
+                            </ul>
+                            <div class="analysis-warning">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <span>Executes payload</span>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Command Line Arguments (for dynamic analysis) -->
+                <div id="argsInputContainer" class="hidden args-container">
+                    <div class="form-group">
+                        <label for="analysisArgs">Command-line Arguments (Optional)</label>
+                        <input type="text" id="analysisArgs" placeholder="Enter arguments separated by spaces" class="form-input"/>
+                        <p class="form-help">Provide arguments for payload execution (Dynamic Analysis only)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.upload-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.progress-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 3rem;
+    gap: 2rem;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.step-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: all var(--transition-base);
+    position: relative;
+}
+
+.step.active .step-circle {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-color: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-glow);
+}
+
+.step.completed .step-circle {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+.step-check {
+    width: 24px;
+    height: 24px;
+}
+
+.step-number {
+    display: block;
+}
+
+.step.completed .step-number {
+    display: none;
+}
+
+.step.completed .step-check {
+    display: block;
+}
+
+.step-content {
+    text-align: left;
+}
+
+.step-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: all var(--transition-base);
+}
+
+.step.active .step-title {
+    color: var(--primary);
+}
+
+.step-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.step-line {
+    width: 120px;
+    height: 2px;
+    background: var(--border-secondary);
+    position: relative;
+    overflow: hidden;
+}
+
+.step-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    transition: width var(--transition-slow);
+}
+
+.step.completed ~ .step-line::after {
+    width: 100%;
+}
+
+.upload-section, .analysis-section {
+    margin-bottom: 2rem;
+}
+
+.drop-zone {
+    position: relative;
+}
+
+.drop-zone-label {
+    display: block;
+    padding: 4rem 2rem;
+    border: 2px dashed var(--border-secondary);
+    border-radius: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.drop-zone-label:hover {
+    border-color: var(--primary);
+    background: var(--bg-hover);
+}
+
+.drop-zone-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+}
+
+.drop-zone-label:hover .drop-zone-icon {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-glow);
+}
+
+.drop-zone-icon svg {
+    width: 40px;
+    height: 40px;
+    color: var(--primary);
+}
+
+.drop-zone-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.drop-zone-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+}
+
+.file-types {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.file-types-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.file-type-badge {
+    padding: 0.25rem 0.75rem;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary);
+}
+
+.file-size-info {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.file-info-card {
+    margin-bottom: 1.5rem;
+}
+
+.file-info-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.file-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.file-icon svg {
+    width: 24px;
+    height: 24px;
+    color: var(--primary);
+}
+
+.file-details {
+    flex: 1;
+}
+
+.file-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.file-meta {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.separator {
+    margin: 0 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.file-hashes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.hash-item {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid var(--border-secondary);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.hash-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.copy-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: all var(--transition-fast);
+}
+
+.copy-btn:hover {
+    color: var(--primary);
+}
+
+.copy-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.hash-value {
+    display: block;
+    font-size: 0.875rem;
+    word-break: break-all;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.analysis-option {
+    background: transparent;
+    border: 1px solid var(--border-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.analysis-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    transform: scaleX(0);
+    transition: transform var(--transition-base);
+}
+
+.analysis-option:hover {
+    border-color: var(--border-primary);
+    background: var(--bg-hover);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.analysis-option:hover::before {
+    transform: scaleX(1);
+}
+
+.analysis-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.analysis-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.static-icon {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: var(--primary);
+}
+
+.dynamic-icon {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: var(--secondary);
+}
+
+.analysis-content {
+    flex: 1;
+}
+
+.analysis-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.analysis-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0 0 1rem 0;
+}
+
+.analysis-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+}
+
+.analysis-features li {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    padding: 0.25rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.analysis-features li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--success);
+    font-weight: 600;
+}
+
+.analysis-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: var(--warning);
+}
+
+.analysis-warning svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.args-container {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-secondary);
+}
+
+.form-help {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.hidden {
+    display: none !important;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}
