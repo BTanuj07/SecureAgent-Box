@@ -3,6 +3,7 @@ import sys
 import ctypes
 import argparse
 from app import create_app, setup_logging  
+import matploit
 
 def is_running_as_admin():
     """Check if the script is running with administrative privileges."""
