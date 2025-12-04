@@ -1,0 +1,20 @@
+ {
+  "pid" : 9068,
+  "output_dir" : "process_9068",
+  "dumped" : 
+  {
+   "total" : 1,
+   "dumped" : 1
+  },
+  "dumps" : [
+   {
+    "module" : "7ffc62d50000",
+    "module_size" : "2b000",
+    "dump_file" : "7ffc62d50000.userenv.dll",
+    "tags_file" : "7ffc62d50000.userenv.dll.tag",
+    "dump_mode" : "UNMAPPED",
+    "is_shellcode" : 0,
+    "status" : 1
+   }
+  ]
+ }

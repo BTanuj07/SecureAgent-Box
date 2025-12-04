@@ -1,0 +1,335 @@
+{% set page_title = dynamic_results.moneta.findings.process_info.name 
+   or ('PID ' ~ pid) if is_process_analysis 
+   else (file_info.original_name or 'Unknown File') %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureAgentbox Analysis Report - {{ page_title }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#1e40af',
+            accent: '#60a5fa',
+            risk: { critical: '#dc2626', high: '#f97316', medium: '#eab308', low: '#10b981' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass { backdrop-filter: blur(20px); background: rgba(15, 23, 42, 0.8); }
+    .fade-in { animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    body { font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+    .shadow-custom { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    .border-custom { border: 1px solid rgba(51, 65, 85, 0.3); }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-gray-100 antialiased">
+  <div class="max-w-7xl mx-auto px-6 py-10">
+    
+    <!-- Header -->
+    <header class="glass border-custom rounded-3xl p-8 mb-10 shadow-custom fade-in">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-6">
+          <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
+            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+              SecureAgentbox Analysis Report
+            </h1>
+            <p class="text-gray-400 mt-1">{{ page_title }}</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-sm text-gray-400">Generated</div>
+          <div class="text-lg font-semibold text-blue-400">{{ generated_on }}</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Risk Assessment -->
+    <section class="glass border-custom rounded-3xl p-8 mb-10 shadow-custom fade-in">
+      <h2 class="text-2xl font-bold mb-6 text-blue-400">Risk Assessment</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-slate-800/50 rounded-xl p-6">
+          <div class="text-sm text-gray-400 mb-2">Risk Level</div>
+          <div class="text-4xl font-bold {% if risk_level == 'Critical' %}text-red-500{% elif risk_level == 'High' %}text-orange-500{% elif risk_level == 'Medium' %}text-yellow-500{% else %}text-green-500{% endif %}">
+            {{ risk_level }}
+          </div>
+          <div class="text-2xl text-gray-300 mt-2">Score: {{ risk_score }}/100</div>
+        </div>
+        <div class="bg-slate-800/50 rounded-xl p-6">
+          <div class="text-sm text-gray-400 mb-2">Detection Summary</div>
+          <div class="space-y-2">
+            {% if detections %}
+              <div class="flex justify-between"><span>YARA:</span><span class="font-semibold text-blue-400">{{ detections.yara }}</span></div>
+              {% if detections.pesieve %}<div class="flex justify-between"><span>PE-Sieve:</span><span class="font-semibold text-blue-400">{{ detections.pesieve }}</span></div>{% endif %}
+              {% if detections.moneta %}<div class="flex justify-between"><span>Moneta:</span><span class="font-semibold text-blue-400">{{ detections.moneta }}</span></div>{% endif %}
+              {% if detections.patriot %}<div class="flex justify-between"><span>Patriot:</span><span class="font-semibold text-blue-400">{{ detections.patriot }}</span></div>{% endif %}
+              {% if detections.hsb %}<div class="flex justify-between"><span>HSB:</span><span class="font-semibold text-blue-400">{{ detections.hsb }}</span></div>{% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% if risk_factors %}
+      <div class="mt-6">
+        <h3 class="text-lg font-semibold mb-3 text-blue-400">Risk Factors</h3>
+        <ul class="space-y-2">
+          {% for factor in risk_factors %}
+          <li class="flex items-start">
+            <svg class="w-5 h-5 text-yellow-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            <span class="text-gray-300">{{ factor }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- File Information -->
+    {% if file_info %}
+    <section class="glass border-custom rounded-3xl p-8 mb-10 shadow-custom fade-in">
+      <h2 class="text-2xl font-bold mb-6 text-blue-400">File Information</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-800/50 rounded-lg p-4">
+          <div class="text-sm text-gray-400">Filename</div>
+          <div class="text-lg font-semibold text-gray-200">{{ file_info.original_name }}</div>
+        </div>
+        <div class="bg-slate-800/50 rounded-lg p-4">
+          <div class="text-sm text-gray-400">File Size</div>
+          <div class="text-lg font-semibold text-gray-200">{{ format_size(file_info.size) if file_info.size else 'N/A' }}</div>
+        </div>
+        <div class="bg-slate-800/50 rounded-lg p-4">
+          <div class="text-sm text-gray-400">MD5</div>
+          <div class="text-sm font-mono text-gray-200 break-all">{{ file_info.md5 }}</div>
+        </div>
+        <div class="bg-slate-800/50 rounded-lg p-4">
+          <div class="text-sm text-gray-400">SHA256</div>
+          <div class="text-sm font-mono text-gray-200 break-all">{{ file_info.sha256 }}</div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Scanner Results Summary -->
+    {% if static_results or dynamic_results %}
+    <section class="glass border-custom rounded-3xl p-8 mb-10 shadow-custom fade-in">
+      <h2 class="text-2xl font-bold mb-6 text-blue-400">Scanner Results</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-gray-700">
+              <th class="px-4 py-3 text-left text-sm font-medium text-gray-300">Scanner</th>
+              <th class="px-4 py-3 text-left text-sm font-medium text-gray-300">Status</th>
+              <th class="px-4 py-3 text-left text-sm font-medium text-gray-300">Detections</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            {% if detections %}
+            <tr>
+              <td class="px-4 py-3 text-gray-300">YARA</td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs rounded {% if detections.yara %}bg-red-500/20 text-red-400{% else %}bg-green-500/20 text-green-400{% endif %}">
+                  {{ 'Suspicious' if detections.yara else 'Clean' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 {% if detections.yara %}text-red-400{% else %}text-gray-400{% endif %}">{{ detections.yara }}</td>
+            </tr>
+            {% if detections.pesieve is defined %}
+            <tr>
+              <td class="px-4 py-3 text-gray-300">PE-Sieve</td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs rounded {% if detections.pesieve %}bg-red-500/20 text-red-400{% else %}bg-green-500/20 text-green-400{% endif %}">
+                  {{ 'Suspicious' if detections.pesieve else 'Clean' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 {% if detections.pesieve %}text-red-400{% else %}text-gray-400{% endif %}">{{ detections.pesieve }}</td>
+            </tr>
+            {% endif %}
+            {% if detections.moneta is defined %}
+            <tr>
+              <td class="px-4 py-3 text-gray-300">Moneta</td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs rounded {% if detections.moneta %}bg-red-500/20 text-red-400{% else %}bg-green-500/20 text-green-400{% endif %}">
+                  {{ 'Suspicious' if detections.moneta else 'Clean' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 {% if detections.moneta %}text-red-400{% else %}text-gray-400{% endif %}">{{ detections.moneta }}</td>
+            </tr>
+            {% endif %}
+            {% if detections.patriot is defined %}
+            <tr>
+              <td class="px-4 py-3 text-gray-300">Patriot</td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs rounded {% if detections.patriot %}bg-red-500/20 text-red-400{% else %}bg-green-500/20 text-green-400{% endif %}">
+                  {{ 'Suspicious' if detections.patriot else 'Clean' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 {% if detections.patriot %}text-red-400{% else %}text-gray-400{% endif %}">{{ detections.patriot }}</td>
+            </tr>
+            {% endif %}
+            {% if detections.hsb is defined %}
+            <tr>
+              <td class="px-4 py-3 text-gray-300">HSB</td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs rounded {% if detections.hsb %}bg-red-500/20 text-red-400{% else %}bg-green-500/20 text-green-400{% endif %}">
+                  {{ 'Suspicious' if detections.hsb else 'Clean' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 {% if detections.hsb %}text-red-400{% else %}text-gray-400{% endif %}">{{ detections.hsb }}</td>
+            </tr>
+            {% endif %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- YARA Detections -->
+    {% if dynamic_results and dynamic_results.yara and dynamic_results.yara.matches %}
+    <section class="glass border-custom rounded-3xl p-8 mb-10 shadow-custom fade-in">
+      <h2 class="text-2xl font-bold mb-6 text-blue-400">YARA Detections</h2>
+      <div class="space-y-4">
+        {% for match in dynamic_results.yara.matches %}
+        <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-red-400">{{ match.rule }}</h3>
+              {% if match.metadata %}
+              <div class="mt-2 space-y-1">
+                {% if match.metadata.description %}
+                <p class="text-sm text-gray-300">{{ match.metadata.description }}</p>
+                {% endif %}
+                {% if match.metadata.severity %}
+                <span class="inline-block px-2 py-1 text-xs rounded bg-red-500/20 text-red-300">
+                  Severity: {{ match.metadata.severity }}
+                </span>
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- PE-Sieve Results -->
+    {% if dynamic_results and dynamic_results.pe_sieve and dynamic_results.pe_sieve.findings %}
+    <section class="glass border-custom rounded-3xl p-8 mb-10 shadow-custom fade-in">
+      <h2 class="text-2xl font-bold mb-6 text-blue-400">PE-Sieve Analysis</h2>
+      <div class="bg-slate-800/50 rounded-lg p-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <div class="text-sm text-gray-400">Total Suspicious</div>
+            <div class="text-2xl font-bold text-red-400">{{ dynamic_results.pe_sieve.findings.total_suspicious or 0 }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-400">Scanned</div>
+            <div class="text-2xl font-bold text-gray-300">{{ dynamic_results.pe_sieve.findings.scanned or 0 }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-400">Hooked</div>
+            <div class="text-2xl font-bold text-yellow-400">{{ dynamic_results.pe_sieve.findings.hooked or 0 }}</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-400">Replaced</div>
+            <div class="text-2xl font-bold text-orange-400">{{ dynamic_results.pe_sieve.findings.replaced or 0 }}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Moneta Results -->
+    {% if dynamic_results and dynamic_results.moneta and dynamic_results.moneta.findings %}
+    <section class="glass border-custom rounded-3xl p-8 mb-10 shadow-custom fade-in">
+      <h2 class="text-2xl font-bold mb-6 text-blue-400">Moneta Memory Analysis</h2>
+      {% set findings = dynamic_results.moneta.findings %}
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {% if findings.total_private_rwx %}
+        <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <div class="text-sm text-gray-400">Private RWX</div>
+          <div class="text-2xl font-bold text-red-400">{{ findings.total_private_rwx }}</div>
+        </div>
+        {% endif %}
+        {% if findings.total_modified_code %}
+        <div class="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+          <div class="text-sm text-gray-400">Modified Code</div>
+          <div class="text-2xl font-bold text-orange-400">{{ findings.total_modified_code }}</div>
+        </div>
+        {% endif %}
+        {% if findings.total_heap_executable %}
+        <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+          <div class="text-sm text-gray-400">Heap Executable</div>
+          <div class="text-2xl font-bold text-yellow-400">{{ findings.total_heap_executable }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Static Analysis Results -->
+    {% if static_results %}
+    <section class="glass border-custom rounded-3xl p-8 mb-10 shadow-custom fade-in">
+      <h2 class="text-2xl font-bold mb-6 text-blue-400">Static Analysis</h2>
+      
+      {% if static_results.yara and static_results.yara.matches %}
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-blue-300 mb-3">YARA Matches</h3>
+        <div class="space-y-2">
+          {% for match in static_results.yara.matches %}
+          <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+            <span class="font-semibold text-red-400">{{ match.rule }}</span>
+            {% if match.metadata and match.metadata.description %}
+            <p class="text-sm text-gray-300 mt-1">{{ match.metadata.description }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if static_results.checkplz and static_results.checkplz.findings %}
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-blue-300 mb-3">CheckPLZ Analysis</h3>
+        <div class="bg-slate-800/50 rounded-lg p-4">
+          {% if static_results.checkplz.findings.initial_threat %}
+          <div class="text-red-400 font-semibold mb-2">⚠ Initial Threat Detected</div>
+          {% endif %}
+          {% if static_results.checkplz.findings.threat_indicators %}
+          <div class="text-sm text-gray-300">
+            Threat Indicators: {{ static_results.checkplz.findings.threat_indicators|length }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <!-- Footer -->
+    <footer class="text-center text-gray-500 text-sm mt-10">
+      <p>SecureAgentbox - Advanced Malware Analysis Platform</p>
+      <p class="mt-2">Report generated on {{ generated_on }}</p>
+    </footer>
+
+  </div>
+</body>
+</html>

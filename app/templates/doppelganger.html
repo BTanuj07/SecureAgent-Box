@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block page_title %}Doppelganger Analysis{% endblock %}
+
+{% block content %}
+<div class="doppelganger-container fade-in">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-content">
+            <div>
+                <h1 class="page-title">Doppelganger Analysis</h1>
+                <p class="page-description">
+                    {% if analysis_type == 'blender' %}
+                    Compare system processes with payloads to identify shared indicators of compromise
+                    {% else %}
+                    Discover similarities between payloads using fuzzy hash comparison
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        
+        <div class="header-meta">
+            <div class="meta-badge">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Last {% if analysis_type == 'blender' %}scan: {{ last_modified }}{% else %}update: {{ db_stats.last_updated }}{% endif %}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Type Selector -->
+    <div class="analysis-selector card">
+        <div class="selector-label">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+            </svg>
+            <span>Analysis Mode</span>
+        </div>
+        <select id="analysisType" class="form-select">
+            <option value="blender" {% if analysis_type == 'blender' %}selected{% endif %}>Blender Analyzer</option>
+            <option value="fuzzy" {% if analysis_type == 'fuzzy' %}selected{% endif %}>FuzzyHash Analyzer</option>
+        </select>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <!-- Blender Tabs -->
+        <div id="blenderTabs" class="{% if analysis_type != 'blender' %}hidden{% endif %} tab-group">
+            <button id="scanView" onclick="blenderAnalyzer.switchView('scan')" class="tab-btn active">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <span>System Scan</span>
+            </button>
+            <button id="compareView" onclick="blenderAnalyzer.switchView('compare')" class="tab-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                <span>Payloads List</span>
+            </button>
+        </div>
+
+        <!-- Fuzzy Tabs -->
+        <div id="fuzzyTabs" class="{% if analysis_type != 'fuzzy' %}hidden{% endif %} tab-group">
+            <button id="createDbView" onclick="fuzzyAnalyzer.switchView('create_db')" class="tab-btn active">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                </svg>
+                <span>Database</span>
+            </button>
+            <button id="analyzeView" onclick="fuzzyAnalyzer.switchView('analyze')" class="tab-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <span>Analyze</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Blender Content -->
+    <div id="blenderContent" class="{% if analysis_type != 'blender' %}hidden{% endif %} content-section">
+        <!-- Scan Actions -->
+        <div id="scanActions" class="view-content hidden">
+            <div class="card action-card">
+                <div class="action-header">
+                    <div class="action-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>System Process Scan</h3>
+                        <p>Scan all running processes and collect IOCs for comparison</p>
+                    </div>
+                </div>
+                <button id="startScan" class="btn btn-primary btn-lg">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Start New Scan</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Display -->
+        <div class="card results-card">
+            <div class="card-header">
+                <h2 id="blenderResultsTitle" class="card-title">Analysis Results</h2>
+            </div>
+            <div class="card-body">
+                <div id="blenderScanResults" class="results-content">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fuzzy Content -->
+    <div id="fuzzyContent" class="{% if analysis_type != 'fuzzy' %}hidden{% endif %} content-section">
+        <!-- Database Statistics -->
+        <div id="databaseStats" class="stats-grid">
+            <!-- Will be populated by JS -->
+        </div>
+
+        <!-- Create Database Form -->
+        <div id="createDbForm" class="view-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="header-icon-inline">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                        </svg>
+                    </div>
+                    <h3 class="card-title">Create FuzzyHash Database</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="folderPath">Folder Path</label>
+                        <input type="text" id="folderPath" class="form-input" placeholder="C:\Path\To\Folder"/>
+                        <p class="form-help">Enter the path to the folder containing files to analyze</p>
+                    </div>
+                    <button onclick="fuzzyAnalyzer.createDb()" class="btn btn-primary">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <span>Create Database</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analyze Form -->
+        <div id="analyzeForm" class="view-content hidden">
+            <!-- Will be populated by loadAvailableFiles() -->
+        </div>
+
+        <!-- Results Section -->
+        <div class="card results-card">
+            <div class="card-header">
+                <h2 id="fuzzyResultsTitle" class="card-title">Analysis Results</h2>
+            </div>
+            <div class="card-body">
+                <div id="fuzzyAnalysisResults" class="results-content">
+                    <!-- Results will be populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.doppelganger-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    gap: 2rem;
+}
+
+.header-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    flex: 1;
+}
+
+.header-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.header-icon svg {
+    width: 28px;
+    height: 28px;
+    color: var(--primary);
+}
+
+.page-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.page-description {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.meta-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid var(--border-secondary);
+    border-radius: 10px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.meta-badge svg {
+    width: 16px;
+    height: 16px;
+    color: var(--primary);
+}
+
+.analysis-selector {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+}
+
+.selector-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.selector-label svg {
+    width: 18px;
+    height: 18px;
+    color: var(--primary);
+}
+
+.form-select {
+    width: 100%;
+    max-width: 300px;
+    padding: 0.75rem 1rem;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid var(--border-secondary);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.tab-navigation {
+    margin-bottom: 2rem;
+}
+
+.tab-group {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
+    border-radius: 12px;
+}
+
+.tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.tab-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.tab-btn:hover {
+    background: var(--bg-hover);
+    color: var(--primary);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+    border-color: var(--border-primary);
+    color: var(--primary);
+}
+
+.content-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.action-card {
+    padding: 2rem;
+}
+
+.action-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.action-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.action-icon svg {
+    width: 24px;
+    height: 24px;
+    color: var(--primary);
+}
+
+.action-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.action-header p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+}
+
+.results-card {
+    min-height: 400px;
+}
+
+.results-content {
+    min-height: 300px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.header-icon-inline {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.header-icon-inline svg {
+    width: 20px;
+    height: 20px;
+    color: var(--primary);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.hidden {
+    display: none !important;
+}
+</style>
+
+<script>
+    // Initialize data
+    window.initialScanData = {{ initial_data | tojson | safe if initial_data else 'null' }};
+    window.lastScanDate = "{{ last_modified }}" || null;
+    window.dbStats = {{ db_stats | tojson | safe if db_stats else 'null' }};
+    window.analysisType = "{{ analysis_type }}";
+
+    // Handle analysis type switching
+    document.addEventListener('DOMContentLoaded', () => {
+        const analysisType = document.getElementById('analysisType');
+        analysisType?.addEventListener('change', async function() {
+            const type = this.value;
+            
+            // Update URL and redirect
+            const url = new URL(window.location);
+            url.searchParams.set('type', type);
+            window.location.href = url.toString();
+        });
+    });
+</script>
+<script src="{{ url_for('static', filename='js/blender.js') }}"></script>
+<script src="{{ url_for('static', filename='js/fuzzy.js') }}"></script>
+{% endblock %}
